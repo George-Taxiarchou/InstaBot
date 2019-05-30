@@ -13,7 +13,6 @@ Instagram Profile Ranker for educational purposes.
 ## Requirements
 
 ``` 
- pip3 install Genderize  
  pip3 install webdriver_manager  
  pip3 install selenium   
  ```
