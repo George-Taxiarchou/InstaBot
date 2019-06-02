@@ -1,12 +1,16 @@
+# -*- coding: utf-8 -*-
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import ui
 from webdriver_manager.chrome import ChromeDriverManager
+from plyer import notification
+
 import time
 import pickle
 import csv
+import itertools
 from gender import Gender
 from instalytics import instalyticA
 
@@ -248,11 +252,95 @@ class InstaBot:
             except Exception as e:
                 print('No next')
 
+    def showToastNotification(self,textToShow):
+            notification.notify(
+                        title='InstaBot Update',
+                        message=textToShow,
+                        app_icon='C:\\Users\\Moura\\thotpy\\insta.ico',
+                        timeout=15,  # seconds
+                    )
+
+    def writeFollowingsToCsv(self, names, usernames, stalkedUsername):
+        with open(stalkedUsername+'_following.csv', 'w') as file:            
+            for name, username in zip(names, usernames):
+                nameText = name.get_attribute('innerHTML').encode("utf-8")
+                usernameText = username.get_attribute('innerHTML').encode("utf-8")
+                file.write( nameText + '\t' + usernameText  + '\n')
+
+    def compareFollowing(self, names, usernames, stalkedUsername):
+        oldNames = []
+        oldUsernames = []
+        newFollowings = ""
+        foundNewFollowing = False
+
+        #try opening the old file
+        try:
+            with open(stalkedUsername+'_following.csv', 'r') as file:
+                for row in file:
+                    row = row.rstrip().split('\t')
+                    oldNames.append(row[0])
+                    oldUsernames.append(row[1])
+
+            #compare new data with old data from csv file
+            for username in usernames:
+                username = username.get_attribute('innerHTML').encode("utf-8")
+                if username not in oldUsernames:
+                    newFollowings = newFollowings +" "+username
+                    foundNewFollowing = True
+
+            if (foundNewFollowing == False):
+                self.showToastNotification("No new Followings")
+            else:
+                if len(newFollowings)>=256:
+                    newFollowings = "Too many new Followings to display!" #max length of windows toast text is 256
+                print (newFollowings)
+                self.showToastNotification("New Followings:\n"+newFollowings)
+
+                self.writeFollowingsToCsv(names, usernames, stalkedUsername)
+
+        #if old file doesnt exist, create a new one
+        except Exception as e:
+            print("First time for this user")
+            self.writeFollowingsToCsv(names, usernames, stalkedUsername)
+
+    def getFollowings(self, stalkedUsername, mins):
+        interval = mins * 60
+
+        while True:
+            self.driver.get('https://www.instagram.com/' + stalkedUsername + '/')
+            time.sleep(2) # with sleep(1) sometimes needs more time
+
+            try:    
+                followersButton = self.driver.find_element_by_xpath("//a[contains(@href,'following')]")
+                time.sleep(3)
+
+                followersButton.click()
+                time.sleep(4)
+                #self.driver.execute_script("window.scrollTo(0, 2000)")
+
+                elements = self.driver.find_elements_by_class_name('wo9IH')
+                while True:
+                    self.driver.execute_script("arguments[0].scrollIntoView();", elements[len(elements)-1])
+                    time.sleep(2)
+                    lastElement = elements[len(elements)-1]
+                    elements = self.driver.find_elements_by_class_name('wo9IH')
+                    names = self.driver.find_elements_by_css_selector('.wFPL8')
+                    usernames =  self.driver.find_elements_by_css_selector('.FPmhX')
+                    if (lastElement == elements[len(elements)-1]):
+                        self.compareFollowing(names, usernames, stalkedUsername)
+                        break
+                            
+                time.sleep(interval)
+                    
+            except Exception as e:
+                print e
+
 def main():
 
     locations = {"ioannina": "https://www.instagram.com/explore/locations/214912508/ioannina-greece/","volos": "https://www.instagram.com/explore/locations/222285750/volos/","egg":"https://www.instagram.com/world_record_egg/"}
-    instabot = InstaBot("evakiptr","gayfilipas1", False)
-    # instabot.login()
+    instabot = InstaBot("gamakostraki","999666333", False)
+    instabot.login()
+    instabot.getFollowings("g.taxiarchou",1)
     # instabot.go_to_location(locations["ioannina"])
     # instabot.focus_post()
     # instabot.scrap_profiles()
