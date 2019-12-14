@@ -338,7 +338,7 @@ class InstaBot:
 def main():
 
     locations = {"ioannina": "https://www.instagram.com/explore/locations/214912508/ioannina-greece/","volos": "https://www.instagram.com/explore/locations/222285750/volos/","egg":"https://www.instagram.com/world_record_egg/"}
-    instabot = InstaBot("gamakostraki","999666333", False)
+    instabot = InstaBot("*","*", False)
     instabot.login()
     instabot.getFollowings("g.taxiarchou",1)
     # instabot.go_to_location(locations["ioannina"])
